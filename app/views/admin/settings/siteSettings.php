@@ -77,6 +77,27 @@
 														<?php if(form_error('SITE_DEFAULT_TIME')):echo '<span class="help-block">'.form_error('SITE_DEFAULT_TIME').' </span>';endif;?>
 													</div>
 												</div>
+												<div class="form-group">
+													<label class="col-md-4 control-label">SITE_DEFAULT_TIMEZONE <span class="required">* </span></label>
+													<div class="col-md-8">
+														<select type="text" class="form-control select2" name="SITE_DEFAULT_TIMEZONE">
+														<?php
+														$tZone = 'America/Los_Angeles';
+														if(isset($settings['SITE_DEFAULT_TIMEZONE'])){
+															$tZone = $settings['SITE_DEFAULT_TIMEZONE'];
+														}
+														foreach(time_zones() as $zone){
+
+															$sel = '';
+															if(trim($zone) == $tZone){
+																$sel = ' selected="selected"';
+															}
+															echo '<option value="'.trim($zone).'" '.$sel.'>'.trim($zone).'</option>';
+														} 
+														?>
+														</select>
+													</div>
+												</div>
 											</div>
 											<div class="form-actions right">
 												<div class="row">
@@ -108,3 +129,8 @@
 </body>
 <!-- END BODY -->
 </html>
+<script type="text/javascript">
+$(document).ready(function(){
+	$('.select2').select2();
+})
+</script>

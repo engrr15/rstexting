@@ -107,6 +107,11 @@ class SiteSettings extends CI_Controller {
 			
 			if($this->form_validation->run())
 			{	
+				$validate = $this->validateFromNumber($this->input->post());
+				if($validate != 'success'){
+					$this->session->set_flashdata('flash_message', $validate);
+					redirect_admin('siteSettings');
+				}
 			   
 				  $updateData                   	= array();
                                   $updateData['site_title']     	= $this->input->post('site_title');
@@ -116,6 +121,7 @@ class SiteSettings extends CI_Controller {
 				  $updateData['created']        	= strtotime(date('Y-m-d H:i:s'));
                                   $updateData['SITE_SIGNATURE']    	= $this->input->post('SITE_SIGNATURE');
                                   $updateData['SITE_DEFAULT_TIME']    	= $this->input->post('SITE_DEFAULT_TIME');
+                                  $updateData['SITE_DEFAULT_TIMEZONE']    	= $this->input->post('SITE_DEFAULT_TIMEZONE');
 				 // pr($updateData);
 				  //Update Site Settings
 				
@@ -131,6 +137,35 @@ class SiteSettings extends CI_Controller {
 	   $this->load->view('admin/settings/siteSettings',$this->outputData);
 	   
 	}//End of index Function
+
+	public function validateFromNumber($argu = array()){
+		$sid = $argu['TWILIO_ACCOUNT_SID'];
+		$token = $argu['TWILIO_ACCOUNT_TOKEN'];
+		$twilioNumber = $argu['TWILIO_FROM_VALID_PHONE_NUMBER'];
+		require $this->config->item('basepath') . "twilio-php/Services/Twilio.php";
+		try{
+			$client = new Services_Twilio($sid, $token);
+
+			$phoneSID = '';
+			$SmsUrl = admin_url('inboundSms/index');
+			//$SmsUrl = 'http://rsstexting.com/cron/inboundsms.php';
+			$conver_arry = array('SmsUrl' => $SmsUrl);
+
+			foreach($client->account->incoming_phone_numbers->getIterator(0, 1000) as $inPhone){
+				if($twilioNumber == $inPhone->phone_number ){
+					$phoneSID = $inPhone->sid;
+				}
+			}
+			if($phoneSID != ''){
+				$number = $client->account->incoming_phone_numbers->get($phoneSID);
+				$number->update($conver_arry);
+			}
+			$return = 'success';
+		}catch(Exception $e){
+			$return = $e->getMessage();
+		}
+		return $return;
+	}
 	
 	// --------------------------------------------------------------------
 	

@@ -69,6 +69,8 @@ class Settings_model extends CI_Model {
             } //if End 
             if ($row->value_type == 'P') {
                 $data[$row->code] = $row->string_value;
+            }else{
+              $data[$row->code] = $row->string_value;
             } //if End 
         }// Foreach End
         return $data;
@@ -111,6 +113,14 @@ class Settings_model extends CI_Model {
         $data = array('string_value' => $updateData['SITE_DEFAULT_TIME']);
         $this->db->where('code', 'SITE_DEFAULT_TIME');
         $this->db->update('settings', $data);
+
+        if($this->db->where('code','SITE_DEFAULT_TIMEZONE')->from('settings')->get()->num_rows() > 0){
+          $data = array('string_value' => $updateData['SITE_DEFAULT_TIMEZONE']);
+          $this->db->where('code', 'SITE_DEFAULT_TIMEZONE');
+          $this->db->update('settings', $data);
+        }else{
+          $this->db->set('code','SITE_DEFAULT_TIMEZONE')->set('string_value',$updateData['SITE_DEFAULT_TIMEZONE'])->set('setting_type','S')->insert('settings');
+        }
     }
 
 //End of updateSiteSettings Function

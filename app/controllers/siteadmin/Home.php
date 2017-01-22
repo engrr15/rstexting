@@ -114,11 +114,59 @@ class Home extends CI_Controller {
         $country = $this->country_model->getCountrys(array(), '', array(), array(), array());
         $this->outputData['country'] = $country;
 
+        /* get data for incoming sms */
+        if(isset($_GET['record'])){
+            $page_record = $_GET['record'];
+        }else{
+            $page_record = '0';
+        }
+        $total_rows = $this->contact_model->getIncomingSMS();
+
+        $config = array();
+        $config['first_link'] = 'First';
+        $config['last_link'] = 'Last';
+        $config['page_query_string']=true;
+        $config['query_string_segment']='record';
+        $config['num_tag_open'] = '<li>';
+        $config['num_tag_close'] = '</li>';
+        $config['next_tag_open'] = '<li>';
+        $config['next_tag_close'] = '</li>';
+        $config['prev_tag_open'] = '<li>';
+        $config['prev_tag_close'] = '</li>';
+        $config['cur_tag_open'] = '<li class="active"><a href="javascript:void()">';
+        $config['cur_tag_close'] = '</a></li>';
+        $config['first_tag_open'] = '<li>';
+        $config['first_tag_close'] = '</li>';
+        $config['last_tag_open'] = '<li>';
+        $config['last_tag_close'] = '</li>';
+        $config['num_links'] = 5;
+
+        $this->load->library('pagination');
+
+        $config['base_url'] = admin_url('home');
+        $config['total_rows'] = $total_rows;
+        $config['per_page'] = 10;
+
+        $this->pagination->initialize($config);
+        $incomingSms = $this->contact_model->getIncomingSMS($config['per_page'],$page_record);
+        $this->outputData['incomingSms'] = $incomingSms;
+
+        //$config = array();
+        /* end here */
+
         $this->outputData['settings']	 = 	$this->settings_model->getSiteSettings();
         $this->load->view('admin/home', $this->outputData);
     }
 
 //Function Index End
+
+    public function deleteMsg(){
+        if(!$this->input->is_ajax_request()){
+            exit('Directory access is forbidden');
+        }
+        $msgId = trim($this->input->post('msgId'));
+        $this->db->where('id',$msgId)->delete('inboundsms');
+    }
 
     function message_reply() {
         $this->form_validation->set_rules('client_id', 'Name ', 'trim|required');
@@ -273,9 +321,13 @@ class Home extends CI_Controller {
                 }
             }
             //end media file collection
-            if ($this->input->post('message_date') != '') {
+            if($this->input->post('message_date') != '' && $this->input->post('scheduleDate') == 'yes') {
                 $message_date = $this->input->post('message_date', TRUE);
-                $message_time = $this->settings_model->getSettingByCode('SITE_DEFAULT_TIME');//$this->input->post('message_time', TRUE);
+                if($this->input->post('scheduleTime') == 'yes'){
+                    $message_time = $this->input->post('message_time', TRUE);
+                }else{
+                    $message_time = $this->settings_model->getSettingByCode('SITE_DEFAULT_TIME');
+                }
 
                 $date = $message_date . ' ' . $message_time;
                 $date = date('Y-m-d H:i:s',strtotime($date));
@@ -323,22 +375,39 @@ class Home extends CI_Controller {
     }
     
     function webNotificationAlert() {
-        $ajax_response['message'] = '';
-        $ajax_response['contact_phone'] = '';
-        $ajax_response['alert'] = 0;
-        $notification = $this->message_model->getNotification();
-        if (isset($notification) and $notification->num_rows() > 0) {
-            foreach ($notification->result() as $list) {
-                $ajax_response['message'] = $list->message;
-                $ajax_response['contact_name'] = $list->C_name;
-                $ajax_response['alert'] = 1;
-                $this->message_model->updateMessage(array('id'=>$list->id),array('webnotification'=>'1'));
+        $this->db->select('*')->from('inboundsms');
+        $this->db->where('msgStatus','No');
+        $this->db->order_by('id','ASC')->limit(1);
+        $record = $this->db->get();
+        if($record->num_rows() > 0){
+            $rec = $record->row();
+            $message = $rec->message;
+            if($rec->mediaUrl != ''){
+                $message .= ' --  Media Attached';
+            }
+            $return = array('status' => 'yes', 'title' => 'New Message From '.$rec->number, 'message' => $message);
+            $this->db->set('msgStatus','Yes')->where('id',$rec->id)->update('inboundsms');
+        }else{
+            $return = array('status' => 'no');
+        }
+        echo @json_encode($return);
+    }
 
+    public function getContact(){
+        $q = trim($this->input->get('q'));
+        $return = '';
+
+        $this->db->select('C_name,C_phone')->from('contact');
+        $this->db->like('C_name',$q);
+        $record = $this->db->get();
+        if($record->num_rows() > 0){
+            foreach($record->result() as $rec){
+                $return .= '<a href="javascript:;" style="cursor:pointer;" onclick="pickNumber(\''.$rec->C_phone.'\',\''.$rec->C_name.'\')" title="Click to select">';
+                $return .= $rec->C_name.' ('.$rec->C_phone.')';
+                $return .= '</a><hr style="margin: 7px 0;border-color:#bababa">';
             }
         }
-        
-        echo json_encode($ajax_response);
-        exit;
+        echo $return;
     }
 
 }

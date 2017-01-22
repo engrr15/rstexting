@@ -55,8 +55,17 @@ class InboundSms extends CI_Controller {
         if (isset($_POST['From']) && $_POST['From'] != '') {
             $number = $_POST['From'];
             $body = $_POST['Body'];
+
+            $mediaUrl = '';
+            if(isset($_REQUEST['MediaUrl'])){
+              $mediaUrl = trim($_REQUEST['MediaUrl']);
+            }
+
             $insertData['number'] = $number;
             $insertData['message'] = $body;
+            if($mediaUrl != ''){
+              $insertData['mediaUrl'] = $mediaUrl;
+            }
             $this->message_model->createInboundMessage($insertData);
         }
 

@@ -11,6 +11,12 @@ class SmsScheduleCronjob extends CI_Controller{
 
 	public function index(){
 		$this->load->model('settings_model');
+		$time_zone = $sid = $this->settings_model->getSettingByCode('SITE_DEFAULT_TIMEZONE');
+		if(trim($time_zone) == ''){
+			$time_zone = 'America/Los_Angeles';
+		}
+		date_default_timezone_set(trim($time_zone));
+		
 		$this->db->select('*')->from('schedule_sms')->where('isProcess','No');
 		$this->db->where('message_time < ',date('Y-m-d H:i:s'))->limit('200');
 		$record = $this->db->get();
@@ -19,6 +25,7 @@ class SmsScheduleCronjob extends CI_Controller{
 			$token = $this->settings_model->getSettingByCode('TWILIO_ACCOUNT_TOKEN');
 			$processed = array();
 			$qArray = array();
+			$smsRecord = array();
 			foreach($record->result() as $rec){
 				$this->db->set('isProcess','Yes')->where('id',$rec->id)->update('schedule_sms');
 				$fromNumber = $rec->fromNumber;
@@ -38,6 +45,11 @@ class SmsScheduleCronjob extends CI_Controller{
                     $client->account->messages->create($msgArr);
                     $processed[] = $rec->id;
                     $qArray[] = array('last_message_date' => date('Y-m-d H:i:s'), 'C_id' => $rec->contactId);
+                    $qMsg = array('contact_id' => $rec->contactId, 'message' => $rec->message, 'added_at' => date('Y-m-d H:i:s'));
+                    if($media != ''){
+                    	$qMsg['media_file'] = $media; 
+                    }
+                    $smsRecord[] = $qMsg;
 				}catch(Exception $e){
 					echo $e->getMessage();
 				}
@@ -47,6 +59,7 @@ class SmsScheduleCronjob extends CI_Controller{
 			}
 			if(count($qArray) > 0){
 				$this->db->update_batch('contact',$qArray,'C_id');
+				$this->db->insert_batch('contact_message',$smsRecord);
 			}
 		}
 

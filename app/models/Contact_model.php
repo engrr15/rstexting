@@ -110,6 +110,16 @@ class Contact_model extends CI_Model {
 		return $result;
 		
 	 }//End of getPackage Function
+
+   public function getIncomingSMS($limit = '', $record = ''){
+    $this->db->select('*')->from('inboundsms')->order_by('id','DESC');
+    if($limit == ''){
+      $return = $this->db->get()->num_rows();
+    }else{
+      $return = $this->db->limit($limit,$record)->get()->result();
+    }
+    return $return;
+   }
          
          
 

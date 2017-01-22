@@ -52,7 +52,8 @@
                                                         <div class="form-group">
                                                             <label class="col-md-3 control-label">Name</label>
                                                             <div class="col-md-9">
-                                                                <input type="text" id="C_nameError" name="C_name" class="form-control" placeholder="Name" value="">
+                                                                <input type="text" id="C_nameError" name="C_name" class="form-control live-search" onkeyup="showResult(this.value)" placeholder="Name" value="">
+                                                                <div id="livesearch"></div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -120,27 +121,54 @@
                                                     <div class="col-md-8">
                                                         <div class="form-group">
                                                             <label class="col-md-3 control-label">Schedule </label>
-                                                            <div class="col-md-6">
-                                                                <div class="input-group date form_datetime">
-			                                                        <input size="16" class="form-control form-control-inline input-medium date-picker" type="text" name="message_date" value="<?php echo date('Y-m-d'); ?>">
-			                                                        <span class="input-group-btn">
-			                                                            <button class="btn default date-set" type="button">
-			                                                                <i class="fa fa-calendar"></i>
-			                                                            </button>
-			                                                        </span>
-			                                                    </div>
+                                                            <div class="col-md-9">
+                                                                <label>
+                                                                    <input type="radio" onclick="scheduleF('yes')" name="scheduleDate" value="yes">&nbsp;Yes
+                                                                </label>
+                                                                <label style="margin-left: 10px;">
+                                                                    <input type="radio" onclick="scheduleF('no')" name="scheduleDate" checked="" value="no">&nbsp;No
+                                                                </label>
                                                             </div>
-                                                            <div class="col-md-3">
-<!--											<div class="input-icon">
-												<i class="fa fa-clock-o"></i>
-                                                                                                <input type="text" class="form-control timepicker timepicker-24" name="message_time" value="<?php if(isset($settings['SITE_DEFAULT_TIME'])) echo date('H:i',strtotime($settings['SITE_DEFAULT_TIME'])); ?>">
-											</div>-->
-                                                                                        <button type="submit" class="btn call-to-action" value="Submit" name="Submit">Send Text</button>
                                                         </div>
-                                                    </div>
-                                                </div>
-                                                
-                                            </div>
+                                                        <div class="form-group sh-group" style="display:none">
+                                                            <label class="col-md-3 control-label">&nbsp;</label>
+                                                            <div class="col-md-6">
+                                                                <div class="input-icon">
+                                                                    <i class="fa fa-calendar"></i>
+                                                                    <input size="16" class="form-control form-control-inline input-medium date-picker" type="text" name="message_date" value="<?php echo date('Y-m-d'); ?>">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-group sh-group" style="display:none">
+                                                            <div class="form-group">
+                                                                <label class="col-md-3 control-label">Time </label>
+                                                                <div class="col-md-9">
+                                                                    <label>
+                                                                        <input type="radio" onclick="scheduleC('yes')" name="scheduleTime" value="yes">&nbsp;Yes
+                                                                    </label>
+                                                                    <label style="margin-left: 10px;">
+                                                                        <input type="radio" onclick="scheduleC('no')" name="scheduleTime" checked="" value="no">&nbsp;No
+                                                                    </label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-group sht-group" style="display:none">
+                                                            <label class="col-md-3 control-label">&nbsp;</label>
+                                                            <div class="col-md-6">
+                                                                <div class="input-icon">
+                                                                    <i class="fa fa-clock-o"></i>
+                                                                    <input type="text" class="form-control timepicker timepicker-24" name="message_time" value="<?php if(isset($settings['SITE_DEFAULT_TIME'])) echo date('H:i',strtotime($settings['SITE_DEFAULT_TIME'])); ?>">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label class="col-md-3 control-label">&nbsp;</label>
+                                                            <div class="col-md-9">
+                                                                <button type="submit" class="btn call-to-action pull-right" value="Submit" name="Submit">Send Text</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>                                                
+                                                 </div>
 
 <!--                                            <div class="form-actions right">
                                                 <div class="row">
@@ -286,6 +314,53 @@
 					<!-- END PORTLET-->
 				</div>
 			</div>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="portlet light">
+                        <div class="portlet-title">
+                            <div class="caption caption-md">
+                                <i class="icon-bar-chart theme-font-color hide"></i>
+                                <span class="caption-subject theme-font-color bold uppercase">Incoming SMS</span>
+                            </div>
+                        </div>
+                        <div class="portlet-body">
+                            <div class="table-responsive" style="width: 100%">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <th>From Number</th>
+                                        <th>Message</th>
+                                        <th>Media</th>
+                                        <th>Action</th>
+                                    </thead>
+                                    <tbody>
+                                        <?php
+                                        foreach($incomingSms as $inSms){
+                                            $msgClass = 'class="unread"';
+                                            if($inSms->msgStatus == 'Yes'){
+                                                $msgClass = '';
+                                            }
+                                            echo '<tr id="msg-'.$inSms->id.'" '.$msgClass.'>';
+                                                echo '<td>'.$inSms->number.'</td>';
+                                                echo '<td>'.$inSms->message.'</td>';
+                                                if($inSms->mediaUrl != ''){
+                                                     echo '<td><img src="'.$inSms->mediaUrl.'" style="max-width:100px;"></td>';
+                                                }else{
+                                                     echo '<td></td>';
+                                                }
+                                                echo '<td>';
+                                                    echo '<a href="javascript:;" onclick="deleteMsg('.$inSms->id.')" title="Delete"><i class="fa fa-trash-o"></i></a>';
+                                                echo '</td>';
+                                            echo '</tr>';
+                                        } 
+                                        ?>
+                                    </tbody>
+                                </table>
+                                <?= '<ul class="pagination pull-right">'.$this->pagination->create_links().'</ul>'; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 			
 			<!-- END PAGE CONTENT INNER -->
 		</div>
@@ -405,7 +480,79 @@ $(document).ready(function() {
         });
        
 });
+function scheduleF(val){
+    if(val == 'yes'){
+        $('.sh-group').show();
+    }else{
+        $('.sh-group').hide();
+    }
+}
+function scheduleC(val){
+    if(val == 'yes'){
+        $('.sht-group').show();
+    }else{
+        $('.sht-group').hide();
+    }
+}
+function deleteMsg(msgId){
+    if(confirm('Are you sure?')){
+        $.ajax({
+            data: {msgId:msgId},
+            type: 'post',
+            url: '<?= admin_url('home/deleteMsg') ?>',
+            success: function(response){
+                $('#msg-'+msgId).remove();
+            }
+        })
+    }
+}
+///live contact search
+function showResult(str) {
+    if (str.length==0) {
+        document.getElementById("livesearch").innerHTML="";
+        document.getElementById("livesearch").style.padding="0px";
+        return;
+    }
+    if (window.XMLHttpRequest) {
+        xmlhttp=new XMLHttpRequest();
+    }else{
+        xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+    }
+    xmlhttp.onreadystatechange=function() {
+        if (xmlhttp.readyState==4 && xmlhttp.status==200) {
+            $('.live-search').removeClass('spinner');
+            document.getElementById("livesearch").innerHTML=xmlhttp.responseText;
+            document.getElementById("livesearch").style.padding="5px";
+            document.getElementById("livesearch").style.display="block";
+            $('input[name="C_phone"]').val('');
+        }
+    }
+    var md_name='<?php echo $md_name; ?>';
+    xmlhttp.open("GET","<?= admin_url('home/getContact'); ?>?q="+str,true);
+    xmlhttp.send();
+    $('.live-search').addClass('spinner');
+}
+$(document).mouseup(function (e){
+    var container = $(".searchable-form");
+    if (!container.is(e.target) && container.has(e.target).length === 0){
+        $('#livesearch').hide();
+    }
+});
+function pickNumber(phone,name){
+    $('input[name="C_phone"]').val(phone);
+    $('input.live-search').val(name);
+}
 </script>
 </body>
 <!-- END BODY -->
 </html>
+<style type="text/css">
+.unread td {
+    background-color: #3d3dfe;
+    color: #ffffff;
+}
+#livesearch {background-color: #44b6ae;max-height: 400px;opacity: 1;overflow-y: auto;position: absolute;width: 97%;z-index: 99;}
+#livesearch a{ color:#fff;display: block;width: 100%;}
+#table-call-log{cursor:pointer;}
+#livesearch a:hover{ text-decoration:none; }
+</style>
